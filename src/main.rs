@@ -23,6 +23,6 @@ fn main() {
     let using_index = search::Index::IVFFlat;
     let query = queries.data[0].vec.clone();
     let answers = search::knn_search(using_index, query.clone(), k_for_search, &dataset);
-    evaluation::evaluate_search_performance(answers.clone(), query.clone(), k_for_search, &dataset);
+    evaluation::evaluate_recall(answers.clone(), query.clone(), k_for_search, &dataset);
 
 }
