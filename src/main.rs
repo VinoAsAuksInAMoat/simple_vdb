@@ -8,17 +8,19 @@ mod search;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let filename = args[1].clone();
-    let data_num: u64 = args[2].parse().unwrap();
-    let search_k: u32 = args[3].parse().unwrap();
+    let dataset_filename = args[1].clone();
+    let query_filename = args[2].clone();
+    let data_num: u64 = args[3].parse().unwrap();
+    let k_for_search: usize = args[4].parse().unwrap();
 
-    let data = dataset_manager::dataset_loader::load_fvecs(filename, data_num);
-    println!("[test] the dimension of data is: {}", data.dim);
-    println!("[test] the number of data is: {}", data.num);
-    println!("[test] one of the data is: {:?}", data.data[0].vec);
+    let dataset = dataset_manager::dataset_loader::load_fvecs(dataset_filename, data_num);
+    println!("[Info] dataset info: dim={}, num={}", dataset.dim, dataset.num);
+    let queries = dataset_manager::dataset_loader::load_fvecs(query_filename, 1);
+    println!("[Info] queries info: dim={}, num={}", queries.dim, queries.num);
 
-    let using_index = search::Index::BruteForce;
-    let answers = search::knn_search(using_index, data.data[0].vec.clone(), search_k, &data);
-    println!("{:?}", answers);
+    //let using_index = search::Index::BruteForce;
+    let using_index = search::Index::IVFFlat;
+    let answers = search::knn_search(using_index, queries.data[0].vec.clone(), k_for_search, &dataset);
+    println!("Answers: \n{:?}", answers);
 
 }

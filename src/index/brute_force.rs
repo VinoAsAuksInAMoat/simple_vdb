@@ -1,7 +1,7 @@
 use crate::data;
 use crate::distance;
 
-pub fn knn(query: Vec<f32>, k: u32, dataset: &data::Dataset) -> Vec<data::Answer> {
+pub fn knn(query: Vec<f32>, k: usize, dataset: &data::Dataset) -> Vec<data::Answer> {
     let mut answers: Vec<data::Answer> = Vec::new();
     let mut id = 0;
     for v in &dataset.data {
@@ -12,9 +12,6 @@ pub fn knn(query: Vec<f32>, k: u32, dataset: &data::Dataset) -> Vec<data::Answer
         });
         id += 1;
     }
+    data::extract_topk(answers, k)
 
-    answers.sort_by(|a, b| a.dist.partial_cmp(&b.dist).unwrap());
-    let _ = answers.split_off(k as usize);
-
-    answers
 }
