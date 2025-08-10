@@ -8,6 +8,10 @@ pub enum Index {
     HNSW, 
 }
 
+pub fn knn_exact_search(query: Vec<f32>, k_for_search: usize, data: &data::Dataset) -> Vec<data::Answer>{
+    index::brute_force::knn(query, k_for_search, data)
+}
+
 pub fn knn_search(using_index: Index, query: Vec<f32>, k_for_search: usize, data: &data::Dataset) -> Vec<data::Answer>{
     let mut answers = Vec::new();
     match using_index {

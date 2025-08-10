@@ -36,7 +36,7 @@ pub fn build(dataset: &data::Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -
         prev_index.clusters[cluster_id].centroid = dataset.data[cluster_id].vec.clone();
     }
 
-    for _ in 0..kmeans_max_loop {
+    for loop_count in 0..kmeans_max_loop {
         index = Index {
             clusters: vec![Cluster{
                 centroid: Vec::new(), 
@@ -61,6 +61,7 @@ pub fn build(dataset: &data::Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -
             index.clusters[i].centroid = calc_centroid(&index.clusters[i].vectors, dataset.dim, dataset.num);
         }
         if index.clusters[0].centroid == prev_index.clusters[0].centroid {
+            println!("[Test] loop_count = {}", loop_count);
             break;
         }
         prev_index = index.clone();
@@ -89,6 +90,9 @@ pub fn knn(query: Vec<f32>, k: usize, index: Index) -> Vec<data::Answer> {
             id: v.id.clone(), 
         });
     }
+
+    let dist_calc_num = index.clusters[min_cluster].vectors.len() as u32 + index.clusters.len() as u32;
+    println!("[Details] the num of dist calc: {}", dist_calc_num);
     data::extract_topk(answers, k)
 }
 

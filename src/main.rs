@@ -5,6 +5,7 @@ mod data;
 mod distance;
 mod index;
 mod search;
+mod evaluation;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -20,7 +21,8 @@ fn main() {
 
     //let using_index = search::Index::BruteForce;
     let using_index = search::Index::IVFFlat;
-    let answers = search::knn_search(using_index, queries.data[0].vec.clone(), k_for_search, &dataset);
-    println!("Answers: \n{:?}", answers);
+    let query = queries.data[0].vec.clone();
+    let answers = search::knn_search(using_index, query.clone(), k_for_search, &dataset);
+    evaluation::evaluate_search_performance(answers.clone(), query.clone(), k_for_search, &dataset);
 
 }
