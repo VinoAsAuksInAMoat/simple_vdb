@@ -8,6 +8,10 @@ pub enum Index {
     HNSW, 
 }
 
+pub fn knn_exact_search(query: Vec<f32>, k_for_search: usize, data: &data::Dataset) -> Vec<data::Answer>{
+    index::brute_force::knn(query, k_for_search, data)
+}
+
 pub fn knn_search(using_index: Index, query: Vec<f32>, k_for_search: usize, data: &data::Dataset) -> Vec<data::Answer>{
     let mut answers = Vec::new();
     match using_index {
@@ -20,7 +24,7 @@ pub fn knn_search(using_index: Index, query: Vec<f32>, k_for_search: usize, data
         }, 
         Index::IVFFlat => {
             println!("[Info] Use IVF Flat index (cluster-based)");
-            let k_for_kmeans = 10;
+            let k_for_kmeans = 100;
             let kmeans_max_loop = 10;
 
             println!("[Info] build index: k for kmeans={}, max loop={}", k_for_kmeans, kmeans_max_loop);
