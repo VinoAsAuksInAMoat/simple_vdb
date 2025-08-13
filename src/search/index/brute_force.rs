@@ -1,5 +1,5 @@
-use crate::data;
-use crate::distance;
+use crate::common::data;
+use crate::search::distance;
 
 pub fn knn(query: Vec<f32>, k: usize, dataset: &data::Dataset) -> Vec<data::Answer> {
     let mut answers: Vec<data::Answer> = Vec::new();

@@ -1,5 +1,5 @@
-use crate::data;
-use crate::distance;
+use crate::common::data;
+use crate::search::distance;
 
 const INF_F32: f32 = 100_000_000_000.0;
 

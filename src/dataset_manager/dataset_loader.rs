@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, BufReader};
 use std::time;
 
-use crate::data;
+use crate::common::data;
 
 pub fn load_fvecs(filename: String, data_num: u64) -> data::Dataset {
     println!("[Info] Load file: {}", filename);

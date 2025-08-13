@@ -1,4 +1,4 @@
-use crate::data;
+use crate::common::data;
 use crate::search;
 
 pub fn evaluate_recall(answers: Vec<data::Answer>, query: Vec<f32>, k_for_search: usize, dataset: &data::Dataset) {

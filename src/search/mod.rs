@@ -1,5 +1,7 @@
-use crate::data;
-use crate::index;
+pub mod distance;
+pub mod index;
+
+use crate::common::data;
 use std::time;
 
 pub enum Index {
@@ -24,7 +26,7 @@ pub fn knn_search(using_index: Index, query: Vec<f32>, k_for_search: usize, data
         }, 
         Index::IVFFlat => {
             println!("[Info] Use IVF Flat index (cluster-based)");
-            let k_for_kmeans = 100;
+            let k_for_kmeans = 10;
             let kmeans_max_loop = 10;
 
             println!("[Info] build index: k for kmeans={}, max loop={}", k_for_kmeans, kmeans_max_loop);

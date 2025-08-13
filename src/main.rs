@@ -1,9 +1,7 @@
 use std::env;
 
 mod dataset_manager;
-mod data;
-mod distance;
-mod index;
+mod common;
 mod search;
 mod evaluation;
 
