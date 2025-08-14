@@ -17,8 +17,8 @@ fn main() {
     let queries = dataset_manager::dataset_loader::load_fvecs(query_filename, 1);
     println!("[Info] queries info: dim={}, num={}", queries.dim, queries.num);
 
-    //let using_index = search::Index::BruteForce;
-    let using_index = search::Index::IVFFlat;
+    //let using_index = search::IndexType::BruteForce;
+    let using_index = search::IndexType::IVFFlat;
     let query = queries.data[0].vec.clone();
     let answers = search::knn_search(using_index, query.clone(), k_for_search, &dataset);
     evaluation::evaluate_recall(answers.clone(), query.clone(), k_for_search, &dataset);

@@ -1,12 +1,15 @@
+use std::rc::Rc;
+
 use crate::common::data;
+use crate::common::data::*;
 use crate::search::distance;
 
 const INF_F32: f32 = 100_000_000_000.0;
 
 #[derive(Clone)]
 struct Cluster {
-    centroid: Vec<f32>, 
-    vectors: Vec<data::Data>, // ids 
+    centroid: VecData, 
+    vectors: Vec<Rc<Data>>, // ids 
     data_num: u64, 
 }
 
@@ -16,7 +19,7 @@ pub struct Index {
 }
 
 
-pub fn build(dataset: &data::Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -> Index {
+pub fn build(dataset: &Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -> Index {
     // init
     let mut index = Index {
         clusters: vec![Cluster{
@@ -54,7 +57,7 @@ pub fn build(dataset: &data::Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -
                     min_cluster = cluster_id;
                 }
             }
-            index.clusters[min_cluster].vectors.push(v.clone());
+            index.clusters[min_cluster].vectors.push(Rc::clone(v));
             index.clusters[min_cluster].data_num += 1;
         }
         for i in 0..index.clusters.len() {
@@ -71,7 +74,7 @@ pub fn build(dataset: &data::Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -
 
 }
 
-pub fn knn(query: Vec<f32>, k: usize, index: Index) -> Vec<data::Answer> {
+pub fn knn(query: VecData, k: usize, index: Index) -> Vec<Answer> {
     let mut min_dist = INF_F32;
     let mut min_cluster: usize = 0; 
     for cluster_id in 0..index.clusters.len() as usize {
@@ -82,10 +85,10 @@ pub fn knn(query: Vec<f32>, k: usize, index: Index) -> Vec<data::Answer> {
         }
     }
 
-    let mut answers: Vec<data::Answer> = Vec::new();
+    let mut answers: Vec<Answer> = Vec::new();
     for v in index.clusters[min_cluster].vectors.iter() {
         let dist = distance::l2_distance(query.clone(), v.vec.clone());
-        answers.push(data::Answer{
+        answers.push(Answer{
             dist: dist, 
             id: v.id.clone(), 
         });
@@ -93,23 +96,23 @@ pub fn knn(query: Vec<f32>, k: usize, index: Index) -> Vec<data::Answer> {
 
     let dist_calc_num = index.clusters[min_cluster].vectors.len() as u32 + index.clusters.len() as u32;
     println!("[Details] the num of dist calc: {}", dist_calc_num);
-    data::extract_topk(answers, k)
+    extract_topk(answers, k)
 }
 
 
 
-fn calc_centroid(data: &Vec<data::Data>, dim: u32, num: u64) -> Vec<f32> {
+fn calc_centroid(data: &Vec<Rc<Data>>, dim: Dim, num: u64) -> VecData {
     let dim: usize = dim as usize;
     if num == 0 {
         return vec![0.0; dim];
     }
-    let mut sum: Vec<f32> = vec![0.0; dim];
+    let mut sum: VecData = vec![0.0; dim];
     for v in data {
         for d in 0..dim as usize {
             sum[d] += v.vec[d];
         }
     }
-    let mut centroid: Vec<f32> = vec![0.0; dim];
+    let mut centroid: VecData = vec![0.0; dim];
     for d in 0..dim as usize {
         centroid[d] = sum[d] / num as f32;
     }

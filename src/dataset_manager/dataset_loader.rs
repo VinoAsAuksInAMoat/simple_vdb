@@ -1,17 +1,18 @@
 use std::fs::File;
 use std::io::{Read, BufReader};
-use std::time;
+use std::{time, rc::Rc};
 
 use crate::common::data;
+use crate::common::data::*;
 
-pub fn load_fvecs(filename: String, data_num: u64) -> data::Dataset {
+pub fn load_fvecs(filename: String, data_num: u64) -> Dataset {
     println!("[Info] Load file: {}", filename);
 
     let timer = time::Instant::now();
 
     let mut reader = BufReader::new(File::open(filename).unwrap());
 
-    let mut dataset = data::Dataset {
+    let mut dataset = Dataset {
         dim: 0, 
         num: data_num, 
         data: Vec::new(), 
@@ -29,10 +30,10 @@ pub fn load_fvecs(filename: String, data_num: u64) -> data::Dataset {
             let val: f32 = f32::from_le_bytes(buf);
             row.push(val);
         }
-        dataset.data.push(data::Data{
+        dataset.data.push(Rc::new(Data{
             vec: row, 
             id: id, 
-        });
+        }));
     }
     dataset.dim = dim;
 
