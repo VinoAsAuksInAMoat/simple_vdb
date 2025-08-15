@@ -1,17 +1,16 @@
-use crate::common::data;
+use std::rc::Rc;
+
 use crate::common::data::*;
 use crate::search::distance;
 
-pub fn knn(query: VecData, k: usize, dataset: &Dataset) -> Answers {
+pub fn knn(query: Rc<VecData>, k: usize, dataset: &Dataset) -> Answers {
     let mut answers: Answers = Vec::new();
-    let mut id = 0;
-    for v in &dataset.data {
-        let dist = distance::l2_distance(query.clone(), v.vec.clone());
+    for (dataid, vecdata) in &dataset.data {
+        let dist = distance::l2_distance(Rc::clone(&query), Rc::clone(vecdata));
         answers.push(Answer{
-            id: id, 
+            id: *dataid, 
             dist: dist, 
         });
-        id += 1;
     }
     extract_topk(answers, k)
 

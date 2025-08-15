@@ -1,9 +1,12 @@
+use std::rc::Rc;
+
 use crate::common::data;
+use crate::common::data::*;
 use crate::search;
 
-pub fn evaluate_recall(answers: Vec<data::Answer>, query: Vec<f32>, k_for_search: usize, dataset: &data::Dataset) {
+pub fn evaluate_recall(answers: Answers, query: Rc<VecData>, k_for_search: usize, dataset: &data::Dataset) {
     println!("[Info] Calculating search accuracy...");
-    let exact_answers: Vec<data::Answer> = search::knn_exact_search(query.clone(), k_for_search, &dataset);
+    let exact_answers: Answers = search::knn_exact_search(Rc::clone(&query), k_for_search, &dataset);
 
     let mut answers_ids = Vec::new();
     for v in answers.iter() {
