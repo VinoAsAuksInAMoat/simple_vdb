@@ -5,6 +5,7 @@ pub mod distance;
 pub mod index;
 
 use crate::common::data::*;
+use crate::search::index::interface::*;
 
 #[allow(dead_code)]
 pub enum IndexType {
@@ -14,7 +15,8 @@ pub enum IndexType {
 }
 
 pub fn knn_exact_search(query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) -> Answers {
-    index::brute_force::knn(Rc::clone(&query), k_for_search, dataset)
+    let mut index = index::brute_force::Index();
+    index.knn(dataset, query, k_for_search)
 }
 
 pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) -> Answers {
@@ -24,7 +26,8 @@ pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usiz
             println!("[Info] Use no index (brute-force search)");
             println!("[Info] kNN search: k={}", k_for_search);
             let timer = time::Instant::now();
-            answers = index::brute_force::knn(Rc::clone(&query), k_for_search, dataset);
+            let mut index = index::brute_force::Index::build();
+            answers = index.knn(dataset, query, k_for_search);
             println!("[Info] -> completed: {:?}", timer.elapsed());
         }, 
         IndexType::IVFFlat => {
@@ -34,12 +37,12 @@ pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usiz
 
             println!("[Info] build index: k for kmeans={}, max loop={}", cluster_num, kmeans_max_loop);
             let timer = time::Instant::now();
-            let index = index::ivf_flat::build(dataset, cluster_num, kmeans_max_loop);
+            let mut index = index::ivf_flat::Index::build(dataset, cluster_num, kmeans_max_loop);
             println!("[Info] -> completed: {:?}", timer.elapsed());
             
             println!("[Info] kNN search: k={}", k_for_search);
             let timer = time::Instant::now();
-            answers = index::ivf_flat::knn(dataset, query, k_for_search, index);
+            answers = index.knn(dataset, query, k_for_search);
             println!("[Info] -> completed: {:?}", timer.elapsed());
         }, 
         IndexType::HNSW => {
