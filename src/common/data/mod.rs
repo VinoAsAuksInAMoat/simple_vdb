@@ -1,22 +1,26 @@
-#[derive(Clone)]
-pub struct Data {
-    pub vec: Vec<f32>, 
-    pub id: u64, 
-}
+use std::rc::Rc;
+use std::collections::HashMap;
+
+pub type VecData = Vec<f32>;
+pub type DataID = u64;
+pub type Dim = u32;
+pub type Dist = f32;
 
 pub struct Dataset {
-    pub dim: u32, 
+    pub dim: Dim, 
     pub num: u64, 
-    pub data: Vec<Data>, 
+    pub data: HashMap<DataID, Rc<VecData>>, 
 }
 
 #[derive(Debug, Clone)]
 pub struct Answer {
-    pub id: u64, 
-    pub dist: f32, 
+    pub id: DataID, 
+    pub dist: Dist, 
 }
 
-pub fn extract_topk(answers: Vec<Answer>, k: usize) -> Vec<Answer> {
+pub type Answers = Vec<Answer>;
+
+pub fn extract_topk(answers: Answers, k: usize) -> Answers {
     let mut topk_answers = answers.clone();
     topk_answers.sort_by(|a, b| a.dist.partial_cmp(&b.dist).unwrap());
     let _ = topk_answers.split_off(k);

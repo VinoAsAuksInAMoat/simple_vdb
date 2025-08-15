@@ -1,13 +1,32 @@
-use crate::common::data;
-use crate::search::distance;
+use std::rc::Rc;
+
+use crate::common::data::*;
+use crate::search::{distance, index::interface::*};
 
 const INF_F32: f32 = 100_000_000_000.0;
 
 #[derive(Clone)]
 struct Cluster {
-    centroid: Vec<f32>, 
-    vectors: Vec<data::Data>, // ids 
+    centroid: Rc<VecData>, // Rcなしより7%高速
+    vectors: Vec<DataID>, 
     data_num: u64, 
+}
+
+impl Cluster {
+    fn calc_centroid(&mut self, dataset: &Dataset) {
+        if dataset.num == 0 {
+            return;
+        }
+        let mut sum: VecData = vec![0.0; dataset.dim as usize];
+        for data_id in self.vectors.iter() {
+            for (v_in_vecdata, v_in_sum) in dataset.data.get(data_id).unwrap().iter().zip(sum.iter_mut()) {
+                *v_in_sum += *v_in_vecdata;
+            }
+        }
+        let num_f32 = dataset.num as f32;
+        let new_centroid = sum.iter().map(|x| x / num_f32).collect();
+        self.centroid = Rc::new(new_centroid);
+    } 
 }
 
 #[derive(Clone)]
@@ -15,103 +34,105 @@ pub struct Index {
     clusters: Vec<Cluster>, 
 }
 
-
-pub fn build(dataset: &data::Dataset, k_for_kmeans: u32, kmeans_max_loop: u32) -> Index {
-    // init
-    let mut index = Index {
-        clusters: vec![Cluster{
-            centroid: Vec::new(), 
-            vectors: Vec::new(), 
-            data_num: 0, 
-        }; 128], 
-    };
-    let mut prev_index = Index {
-        clusters: vec![Cluster{
-            centroid: Vec::new(), 
-            vectors: Vec::new(), 
-            data_num: 0, 
-        }; 128], 
-    };
-    for cluster_id in 0..k_for_kmeans as usize{
-        prev_index.clusters[cluster_id].centroid = dataset.data[cluster_id].vec.clone();
-    }
-
-    for loop_count in 0..kmeans_max_loop {
-        index = Index {
+impl Index {
+    pub fn build(dataset: &Dataset, cluster_num: usize, kmeans_max_loop: u32) -> Self {
+        // init
+        let mut index = Index {
             clusters: vec![Cluster{
-                centroid: Vec::new(), 
+                centroid: Rc::new(Vec::new()), 
                 vectors: Vec::new(), 
                 data_num: 0, 
-            }; 128], 
+            }; cluster_num], 
         };
-        for v in dataset.data.iter() {
-            let mut min_dist = INF_F32;
-            let mut min_cluster: usize = 0;
-            for cluster_id in 0..k_for_kmeans as usize {
-                let dist = distance::l2_distance(v.vec.clone(), prev_index.clusters[cluster_id].centroid.clone());
-                if dist < min_dist {
-                    min_dist = dist;
-                    min_cluster = cluster_id;
+        let mut prev_index = Index {
+            clusters: vec![Cluster{
+                centroid: Rc::new(Vec::new()), 
+                vectors: Vec::new(), 
+                data_num: 0, 
+            }; cluster_num], 
+        };
+        for (cluster, (_dataid, vecdata)) in prev_index.clusters.iter_mut().zip(dataset.data.iter()) {
+            cluster.centroid = Rc::clone(vecdata);
+        }
+
+        for loop_count in 0..kmeans_max_loop {
+            index = Index {
+                clusters: vec![Cluster{
+                    centroid: Rc::new(Vec::new()), 
+                    vectors: Vec::new(), 
+                    data_num: 0, 
+                }; cluster_num], 
+            };
+            
+            for (data_id, vecdata) in dataset.data.iter() {
+                let min_cluster_id = prev_index.find_nearest_cluster(Rc::clone(vecdata));
+
+                index.clusters[min_cluster_id].vectors.push(*data_id);
+                index.clusters[min_cluster_id].data_num += 1;
+            }
+            for cluster in index.clusters.iter_mut() {
+                cluster.calc_centroid(dataset);
+            }
+            for (clusters_cur, clusters_prev) in index.clusters.iter_mut().zip(prev_index.clusters.iter()){
+                if clusters_cur.data_num == 0 {
+                    clusters_cur.centroid = Rc::clone(&clusters_prev.centroid);
                 }
             }
-            index.clusters[min_cluster].vectors.push(v.clone());
-            index.clusters[min_cluster].data_num += 1;
+            /*
+            for (cid, cluster) in index.clusters.iter().enumerate() {
+                println!("cluster{} has {} data", cid, cluster.data_num);
+            }
+            */
+            
+            let mut converged: bool = true;
+            for (clusters_cur, clusters_prev) in index.clusters.iter().zip(prev_index.clusters.iter()){
+                if *clusters_cur.vectors != *clusters_prev.vectors {
+                    converged = false;
+                    break;
+                }
+            }
+            if converged == true {
+                println!("[Test] the number of loops for kmeans = {}", loop_count);
+                break;
+            }
+            prev_index = index.clone();
         }
-        for i in 0..index.clusters.len() {
-            index.clusters[i].centroid = calc_centroid(&index.clusters[i].vectors, dataset.dim, dataset.num);
-        }
-        if index.clusters[0].centroid == prev_index.clusters[0].centroid {
-            println!("[Test] loop_count = {}", loop_count);
-            break;
-        }
-        prev_index = index.clone();
+        index
+
     }
 
-    index
+    fn find_nearest_cluster(&mut self, cmp_vecdata: Rc<VecData>) -> usize {
+        let mut min_dist = INF_F32;
+        let mut min_cluster_id: usize = 0; 
+        for cluster_id in 0..self.clusters.len() as usize {
+            let dist = distance::l2_distance(Rc::clone(&cmp_vecdata), Rc::clone(&self.clusters[cluster_id].centroid));
+            if dist < min_dist {
+                min_dist = dist;
+                min_cluster_id = cluster_id;
+            }
+        }
+        min_cluster_id
 
+    }
 }
 
-pub fn knn(query: Vec<f32>, k: usize, index: Index) -> Vec<data::Answer> {
-    let mut min_dist = INF_F32;
-    let mut min_cluster: usize = 0; 
-    for cluster_id in 0..index.clusters.len() as usize {
-        let dist = distance::l2_distance(query.clone(), index.clusters[cluster_id].centroid.clone());
-        if dist < min_dist {
-            min_dist = dist;
-            min_cluster = cluster_id;
+impl AnnSearch for Index {
+    fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> Vec<Answer> {
+
+        let min_cluster_id = self.find_nearest_cluster(Rc::clone(&query));
+
+        let mut answers: Answers = Vec::new();
+        for data_id in self.clusters[min_cluster_id].vectors.iter() {
+            let dist = distance::l2_distance(Rc::clone(&query), Rc::clone(dataset.data.get(data_id).unwrap()));
+            answers.push(Answer{
+                dist: dist, 
+                id: *data_id, 
+            });
         }
+
+        let dist_calc_num = self.clusters[min_cluster_id].vectors.len() as u32 + self.clusters.len() as u32;
+        println!("[Details] the num of dist calc: {}", dist_calc_num);
+        extract_topk(answers, k)
     }
 
-    let mut answers: Vec<data::Answer> = Vec::new();
-    for v in index.clusters[min_cluster].vectors.iter() {
-        let dist = distance::l2_distance(query.clone(), v.vec.clone());
-        answers.push(data::Answer{
-            dist: dist, 
-            id: v.id.clone(), 
-        });
-    }
-
-    let dist_calc_num = index.clusters[min_cluster].vectors.len() as u32 + index.clusters.len() as u32;
-    println!("[Details] the num of dist calc: {}", dist_calc_num);
-    data::extract_topk(answers, k)
 }
-
-
-
-fn calc_centroid(data: &Vec<data::Data>, dim: u32, num: u64) -> Vec<f32> {
-    let dim: usize = dim as usize;
-    if num == 0 {
-        return vec![0.0; dim];
-    }
-    let mut sum: Vec<f32> = vec![0.0; dim];
-    for v in data {
-        for d in 0..dim as usize {
-            sum[d] += v.vec[d];
-        }
-    }
-    let mut centroid: Vec<f32> = vec![0.0; dim];
-    for d in 0..dim as usize {
-        centroid[d] = sum[d] / num as f32;
-    }
-    centroid
-} 

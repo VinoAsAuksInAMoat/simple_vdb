@@ -1,27 +1,28 @@
 use std::fs::File;
 use std::io::{Read, BufReader};
-use std::time;
+use std::{time, rc::Rc};
+use std::collections::HashMap;
 
-use crate::common::data;
+use crate::common::data::*;
 
-pub fn load_fvecs(filename: String, data_num: u64) -> data::Dataset {
+pub fn load_fvecs(filename: &str, data_num: u64) -> Dataset {
     println!("[Info] Load file: {}", filename);
 
     let timer = time::Instant::now();
 
     let mut reader = BufReader::new(File::open(filename).unwrap());
 
-    let mut dataset = data::Dataset {
+    let mut dataset = Dataset {
         dim: 0, 
         num: data_num, 
-        data: Vec::new(), 
+        data: HashMap::new(), 
     };
 
     let mut buf: [u8; 4] = [0;4];
-    let mut dim: u32 = 0;
+    let mut dim: Dim = 0;
     for id in 0..data_num {
         let _ = reader.read(&mut buf);
-        dim = u32::from_le_bytes(buf);
+        dim = Dim::from_le_bytes(buf);
 
         let mut row = Vec::new();
         for _j in 0..dim {
@@ -29,10 +30,7 @@ pub fn load_fvecs(filename: String, data_num: u64) -> data::Dataset {
             let val: f32 = f32::from_le_bytes(buf);
             row.push(val);
         }
-        dataset.data.push(data::Data{
-            vec: row, 
-            id: id, 
-        });
+        dataset.data.insert(id, Rc::new(row));
     }
     dataset.dim = dim;
 
