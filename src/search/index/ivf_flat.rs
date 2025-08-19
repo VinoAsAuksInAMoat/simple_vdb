@@ -117,16 +117,16 @@ impl Index {
 }
 
 impl AnnSearch for Index {
-    fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> Vec<Answer> {
+    fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> Vec<Neighbor> {
 
         let min_cluster_id = self.find_nearest_cluster(Rc::clone(&query));
 
         let mut answers: Answers = Vec::new();
         for data_id in self.clusters[min_cluster_id].vectors.iter() {
             let dist = distance::l2_distance(Rc::clone(&query), Rc::clone(dataset.data.get(data_id).unwrap()));
-            answers.push(Answer{
+            answers.push(Neighbor{
                 dist: dist, 
-                id: *data_id, 
+                dataid: *data_id, 
             });
         }
 

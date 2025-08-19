@@ -13,12 +13,12 @@ pub struct Dataset {
 }
 
 #[derive(Debug, Clone)]
-pub struct Answer {
-    pub id: DataID, 
+pub struct Neighbor {
+    pub dataid: DataID, 
     pub dist: Dist, 
 }
 
-pub type Answers = Vec<Answer>;
+pub type Answers = Vec<Neighbor>;
 
 pub fn extract_topk(answers: Answers, k: usize) -> Answers {
     let mut topk_answers = answers.clone();
