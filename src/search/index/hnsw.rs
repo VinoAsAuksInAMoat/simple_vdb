@@ -1,8 +1,20 @@
-use std::rc::Rc;
-use std::collections::BTreeMap;
+use std::{
+    rc::Rc, 
+    collections::{BTreeMap, BinaryHeap, HashSet}, 
+    cmp::Reverse, 
+};
+use rand::{
+    seq::SliceRandom, 
+    prelude::*, 
+};
 
-use crate::common::data::*;
-use crate::search::{distance, index::interface::*};
+use crate::{
+    common::data::*, 
+    search::{
+        distance, 
+        index::interface::*
+    }, 
+};
 
 pub type NodeID = u64; 
 pub type Degree = u32;
@@ -49,8 +61,36 @@ impl Layer {
             panic!("[Error] id allocation is failed: lack of id number");
         }
     }
-    fn find_knn(&self, cmp_data: Rc<VecData>, dataset: &Dataset, pg_max_degree: Degree) {
-        todo!();
+    fn search_layer(&self, dataset: &Dataset, query: Rc<VecData>, start_point: Neighbor, max_neighbors_num: usize) -> BinaryHeap<Neighbor> {
+        let mut visited: Vec<NodeID> = vec![start_point.dataid];
+        let mut candidates: BinaryHeap<Reverse<Neighbor>> = BinaryHeap::from([Reverse(start_point.clone())]);
+        let mut neighbors: BinaryHeap<Neighbor> = BinaryHeap::from([start_point.clone()]);
+        while candidates.is_empty() == false {
+            let current_point = candidates.pop().unwrap().0;
+            let farghest_neighbor = neighbors.peek().unwrap();
+            if current_point.dist > farghest_neighbor.dist {
+                break;
+            }
+            for neighbor_ele in self.node_arena[&current_point.dataid].neighbors.iter() {
+                if visited.iter().any(|x| *x == neighbor_ele.dataid) == true {
+                    continue;
+                }
+                let cmp_neighbor = Neighbor{
+                    dataid: neighbor_ele.dataid, 
+                    dist: distance::l2_distance(Rc::clone(&query), Rc::clone(&dataset.data[&neighbor_ele.dataid])), 
+                };
+                visited.push(cmp_neighbor.dataid);
+                let farghest_neighbor = neighbors.peek().unwrap();
+                if cmp_neighbor.dist < farghest_neighbor.dist || neighbors.len() < max_neighbors_num {
+                    candidates.push(Reverse(cmp_neighbor.clone()));
+                    neighbors.push(cmp_neighbor.clone());
+                    if neighbors.len() > max_neighbors_num {
+                        neighbors.pop();
+                    }
+                }
+            }
+        }
+        neighbors
     }
     pub fn build_naive_pg(dataset: &Dataset, pg_max_degree: Degree) -> Self {
         let mut layer = Layer {
@@ -77,23 +117,41 @@ impl Layer {
     }
     fn extract_topk_pg(&self, neighbors: Vec<Neighbor>, k: usize) -> Vec<Neighbor> {
         let mut topk_answers = neighbors.clone();
-        topk_answers.sort_by(|a, b| a.dist.partial_cmp(&b.dist).unwrap());
+        topk_answers.sort();
         let _ = topk_answers.split_off(k);
         topk_answers
     }
 }
 
 impl Index {
-    pub fn build(dataset: &Dataset, pg_max_degree: Degree) -> Self{
+    pub fn build(dataset: &Dataset, pg_max_degree: Degree, num_layers: usize) -> Self {
         Self { 
             layers: vec![Layer::build_naive_pg(dataset, pg_max_degree)], 
         }
+    }
+    fn sampling(dataid_set: Vec<DataID>, sample_num: usize) -> Vec<DataID> {
+        if dataid_set.len() < sample_num {
+            return dataid_set;
+        }
+        let mut sampled = HashSet::new();
+        let mut rng: ThreadRng = rand::thread_rng();
+        while sampled.len() < sample_num {
+            let ele: DataID = rng.gen_range(0..dataid_set.len() as u64);
+            sampled.insert(ele);
+        }
+        Vec::from_iter(sampled)
     }
 }
 
 impl AnnSearch for Index {
     fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> Answers {
-        todo!();
+        let start_point = Neighbor{
+            dataid: 0, 
+            dist: distance::l2_distance(Rc::clone(&query), Rc::clone(&dataset.data[&0]))
+        };
+        let neighbors = self.layers[0].search_layer(dataset, query, start_point, k);
+        let answers = neighbors.into_sorted_vec();
+        extract_topk(answers.clone(), answers.len())
     }
 }
 
