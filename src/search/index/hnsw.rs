@@ -6,24 +6,26 @@ use crate::search::{distance, index::interface::*};
 
 pub type NodeID = u64; 
 pub type Degree = u32;
+pub type LayerID = u8;
 
 pub struct Node{
     nodeid: NodeID, 
     dataid: DataID, 
-    neighbors: Vec<(NodeID, Dist)>, 
+    neighbors: Vec<Neighbor>, 
 }
 
-pub struct Index {
+pub struct Layer {
     node_arena: BTreeMap<NodeID, Rc<Node>>, 
     largest_id: NodeID, 
 }
 
-impl Index {
-    pub fn build() -> Self {
-        todo!();
-    }
-    pub fn alloc(&mut self, dataid: DataID, neighbors: Vec<(NodeID, Dist)>) -> NodeID {
-        let nodeid: NodeID = self.issue_id();
+pub struct Index {
+    layers: Vec<Layer>, 
+}
+
+impl Layer {
+    pub fn alloc(&mut self, dataid: DataID, neighbors: Vec<Neighbor>) -> NodeID {
+        let nodeid: NodeID = self.issue_nodeid();
         let node = Node{
             nodeid: nodeid, 
             dataid: dataid, 
@@ -32,7 +34,7 @@ impl Index {
         self.node_arena.insert(nodeid, Rc::new(node));
         nodeid
     }
-    fn issue_id(&mut self) -> NodeID {
+    fn issue_nodeid(&mut self) -> NodeID {
         if self.node_arena.is_empty() == true {
             return 0;
         } else if (self.largest_id as u64) < ((usize::MAX-1) as u64) {
@@ -51,30 +53,41 @@ impl Index {
         todo!();
     }
     pub fn build_naive_pg(dataset: &Dataset, pg_max_degree: Degree) -> Self {
-        let mut index = Index {
+        let mut layer = Layer {
             node_arena: BTreeMap::new(), 
             largest_id: 0, 
         };
         for (dataid, vecdata) in dataset.data.iter() {
-            let neighbors = index.find_knn_naive(dataset, Rc::clone(vecdata), pg_max_degree as usize);
-            let nodeid = index.alloc(*dataid, neighbors);
+            let neighbors = layer.find_knn_naive(dataset, Rc::clone(vecdata), pg_max_degree as usize);
+            let nodeid = layer.alloc(*dataid, neighbors);
         }
-        index
+        layer
     }
-    fn find_knn_naive(&self, dataset: &Dataset, cmp_vecdata: Rc<VecData>, k: usize) -> Vec<(NodeID, Dist)> {
-        let mut neighbors: Vec<(NodeID, Dist)> = Vec::new();
+    fn find_knn_naive(&self, dataset: &Dataset, cmp_vecdata: Rc<VecData>, k: usize) -> Vec<Neighbor> {
+        let mut neighbors: Vec<Neighbor> = Vec::new();
         for (dataid, vecdata) in &dataset.data {
             let dist = distance::l2_distance(Rc::clone(&cmp_vecdata), Rc::clone(vecdata));
-            neighbors.push((*dataid, dist));
+            neighbors.push(Neighbor{
+                dataid: *dataid, 
+                dist: dist, 
+            });
         }
         self.extract_topk_pg(neighbors, k)
 
     }
-    fn extract_topk_pg(&self, neighbors: Vec<(NodeID, Dist)>, k: usize) -> Vec<(NodeID, Dist)> {
+    fn extract_topk_pg(&self, neighbors: Vec<Neighbor>, k: usize) -> Vec<Neighbor> {
         let mut topk_answers = neighbors.clone();
-        topk_answers.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        topk_answers.sort_by(|a, b| a.dist.partial_cmp(&b.dist).unwrap());
         let _ = topk_answers.split_off(k);
         topk_answers
+    }
+}
+
+impl Index {
+    pub fn build(dataset: &Dataset, pg_max_degree: Degree) -> Self{
+        Self { 
+            layers: vec![Layer::build_naive_pg(dataset, pg_max_degree)], 
+        }
     }
 }
 
