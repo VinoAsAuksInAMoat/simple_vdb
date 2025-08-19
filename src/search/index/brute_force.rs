@@ -14,8 +14,8 @@ impl AnnSearch for Index {
         let mut answers: Answers = Vec::new();
         for (dataid, vecdata) in &dataset.data {
             let dist = distance::l2_distance(Rc::clone(&query), Rc::clone(vecdata));
-            answers.push(Answer{
-                id: *dataid, 
+            answers.push(Neighbor{
+                dataid: *dataid, 
                 dist: dist, 
             });
         }

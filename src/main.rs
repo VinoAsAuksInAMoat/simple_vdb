@@ -19,7 +19,8 @@ fn main() {
     println!("[Info] queries info: dim={}, num={}", queries.dim, queries.num);
 
     //let using_index = search::IndexType::BruteForce;
-    let using_index = search::IndexType::IVFFlat;
+    //let using_index = search::IndexType::IVFFlat;
+    let using_index = search::IndexType::HNSW;
     let query = queries.data.get(&0).unwrap();
     let answers = search::knn_search(using_index, Rc::clone(&query), k_for_search, &dataset);
     evaluation::evaluate_recall(answers.clone(), Rc::clone(&query), k_for_search, &dataset);

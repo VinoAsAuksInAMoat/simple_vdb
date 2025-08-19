@@ -10,12 +10,12 @@ pub fn evaluate_recall(answers: Answers, query: Rc<VecData>, k_for_search: usize
 
     let mut answers_ids = Vec::new();
     for v in answers.iter() {
-        answers_ids.push(v.id.clone());
+        answers_ids.push(v.dataid.clone());
     }
 
     let mut tp_count: u32 = 0;
     for ele in exact_answers.iter() {
-        if answers_ids.contains(&ele.id) {
+        if answers_ids.contains(&ele.dataid) {
             tp_count +=1;
         }
     }

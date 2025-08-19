@@ -47,8 +47,20 @@ pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usiz
         }, 
         IndexType::HNSW => {
             println!("[Info] Use HNSW index (graph-based)");
+            let pg_max_degree: index::hnsw::Degree = 24;
+            let num_layers: u8 = 1;
+
+            let timer = time::Instant::now();
+            let mut index = index::hnsw::Index::build(dataset, pg_max_degree, num_layers);
+            println!("[Info] -> completed: {:?}", timer.elapsed());
+
+            println!("[Info] kNN search: k={}", k_for_search);
+            let timer = time::Instant::now();
+            answers = index.knn(dataset, query, k_for_search);
+            println!("[Info] -> completed: {:?}", timer.elapsed());
         },
     }
+    println!("{:?}", answers);
     answers
 
 }
