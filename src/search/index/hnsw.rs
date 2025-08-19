@@ -1,7 +1,7 @@
 use std::{
     rc::Rc, 
     collections::{BTreeMap, BinaryHeap, HashSet}, 
-    cmp::Reverse, 
+    cmp::{Reverse, min}, 
 };
 use rand::{
     seq::SliceRandom, 
@@ -32,7 +32,8 @@ pub struct Layer {
 }
 
 pub struct Index {
-    layers: Vec<Layer>, 
+    layers: BTreeMap<LayerID, Layer>, 
+    entry_point: NodeID, 
 }
 
 impl Layer {
@@ -92,12 +93,13 @@ impl Layer {
         }
         neighbors
     }
-    pub fn build_naive_pg(dataset: &Dataset, pg_max_degree: Degree) -> Self {
+    pub fn build_naive_pg(dataset: &Dataset, dataid_set: Vec<DataID>, pg_max_degree: Degree) -> Self {
         let mut layer = Layer {
             node_arena: BTreeMap::new(), 
             largest_id: 0, 
         };
-        for (dataid, vecdata) in dataset.data.iter() {
+        for dataid in dataid_set.iter() {
+            let vecdata = &dataset.data[dataid];
             let neighbors = layer.find_knn_naive(dataset, Rc::clone(vecdata), pg_max_degree as usize);
             let nodeid = layer.alloc(*dataid, neighbors);
         }
@@ -112,21 +114,27 @@ impl Layer {
                 dist: dist, 
             });
         }
-        self.extract_topk_pg(neighbors, k)
+        extract_topk(neighbors, k)
 
-    }
-    fn extract_topk_pg(&self, neighbors: Vec<Neighbor>, k: usize) -> Vec<Neighbor> {
-        let mut topk_answers = neighbors.clone();
-        topk_answers.sort();
-        let _ = topk_answers.split_off(k);
-        topk_answers
     }
 }
 
 impl Index {
-    pub fn build(dataset: &Dataset, pg_max_degree: Degree, num_layers: usize) -> Self {
+    pub fn build(dataset: &Dataset, pg_max_degree: Degree, num_layers: u8) -> Self {
+        let mut layers = BTreeMap::new();
+        let mut dataid_set: Vec<DataID> = dataset.data.clone().into_keys().collect();
+        layers.insert(0, Layer::build_naive_pg(dataset, dataid_set.clone(), pg_max_degree));
+        for layerid in 1..num_layers {
+            let sampling_num: usize = dataid_set.len() as usize / 10 as usize;
+            if sampling_num == 0 {
+                break;
+            }
+            dataid_set = Self::sampling(dataid_set.clone(), sampling_num);
+            layers.insert(layerid as u8, Layer::build_naive_pg(dataset, dataid_set.clone(), pg_max_degree));
+        }
         Self { 
-            layers: vec![Layer::build_naive_pg(dataset, pg_max_degree)], 
+            layers: layers, 
+            entry_point: dataid_set[0], // todo: add error handling (e.g. len==0)
         }
     }
     fn sampling(dataid_set: Vec<DataID>, sample_num: usize) -> Vec<DataID> {
@@ -145,13 +153,21 @@ impl Index {
 
 impl AnnSearch for Index {
     fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> Answers {
-        let start_point = Neighbor{
-            dataid: 0, 
-            dist: distance::l2_distance(Rc::clone(&query), Rc::clone(&dataset.data[&0]))
+        let search_queue_size = k + 10;
+
+        let mut start_point = Neighbor{
+            dataid: self.entry_point, 
+            dist: distance::l2_distance(Rc::clone(&query), Rc::clone(&dataset.data[&self.entry_point]))
         };
-        let neighbors = self.layers[0].search_layer(dataset, query, start_point, k);
+        for layerid in self.layers.len()-1..1{
+            let neighbors = self.layers[&(layerid as u8)].search_layer(dataset, Rc::clone(&query), start_point, search_queue_size);
+            let nearest = extract_topk(neighbors.into_sorted_vec().clone(), 1);
+            start_point = nearest[0].clone();
+        }
+
+        let neighbors = self.layers[&0].search_layer(dataset, Rc::clone(&query), start_point, search_queue_size);
         let answers = neighbors.into_sorted_vec();
-        extract_topk(answers.clone(), answers.len())
+        extract_topk(answers.clone(), min(answers.len(), k))
     }
 }
 
