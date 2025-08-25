@@ -28,12 +28,13 @@ pub struct Node{
 
 pub struct Layer {
     node_arena: BTreeMap<NodeID, Rc<Node>>, 
-    largest_id: NodeID, 
+    largest_id: NodeID,  // bitmapで管理に変更？
 }
 
 pub struct Index {
     layers: BTreeMap<LayerID, Layer>, 
     entry_point: NodeID, 
+    search_queue_size: usize, 
 }
 
 impl Layer {
@@ -62,7 +63,7 @@ impl Layer {
             panic!("[Error] id allocation is failed: lack of id number");
         }
     }
-    fn search_layer(&self, dataset: &Dataset, query: Rc<VecData>, start_point: Neighbor, max_neighbors_num: usize) -> BinaryHeap<Neighbor> {
+    fn search_layer(&self, dataset: &Dataset, query: Rc<VecData>, start_point: Neighbor, search_queue_size: usize) -> BinaryHeap<Neighbor> {
         let mut visited: Vec<NodeID> = vec![start_point.dataid];
         let mut candidates: BinaryHeap<Reverse<Neighbor>> = BinaryHeap::from([Reverse(start_point.clone())]);
         let mut neighbors: BinaryHeap<Neighbor> = BinaryHeap::from([start_point.clone()]);
@@ -82,10 +83,10 @@ impl Layer {
                 };
                 visited.push(cmp_neighbor.dataid);
                 let farghest_neighbor = neighbors.peek().unwrap();
-                if cmp_neighbor.dist < farghest_neighbor.dist || neighbors.len() < max_neighbors_num {
+                if cmp_neighbor.dist < farghest_neighbor.dist || neighbors.len() < search_queue_size {
                     candidates.push(Reverse(cmp_neighbor.clone()));
                     neighbors.push(cmp_neighbor.clone());
-                    if neighbors.len() > max_neighbors_num {
+                    if neighbors.len() > search_queue_size {
                         neighbors.pop();
                     }
                 }
@@ -120,11 +121,20 @@ impl Layer {
 }
 
 impl Index {
-    pub fn build(dataset: &Dataset, pg_max_degree: Degree, num_layers: u8) -> Self {
+    pub fn build(dataset: &Dataset, pg_max_degree: Degree, num_layers: u8, search_queue_size: usize) -> Self {
+        // build a layer: layer id = 0
         let mut layers = BTreeMap::new();
         let mut dataid_set: Vec<DataID> = dataset.data.clone().into_keys().collect();
         layers.insert(0, Layer::build_naive_pg(dataset, dataid_set.clone(), pg_max_degree));
-        for layerid in 1..num_layers {
+        if num_layers == 1 {
+            return Self { 
+                layers: layers, 
+                entry_point: dataid_set[0], // todo: add error handling (e.g. len==0)
+                search_queue_size: search_queue_size, 
+            };
+        }
+        // build layers: layer id = 1, ... num_layers-1
+        for layerid in 1..num_layers-1 {
             let sampling_num: usize = dataid_set.len() as usize / 10 as usize;
             if sampling_num == 0 {
                 break;
@@ -132,9 +142,13 @@ impl Index {
             dataid_set = Self::sampling(dataid_set.clone(), sampling_num);
             layers.insert(layerid as u8, Layer::build_naive_pg(dataset, dataid_set.clone(), pg_max_degree));
         }
+        // build a layer: layer id = num_layers
+        dataid_set = Self::sampling(dataid_set.clone(), 1);
+        layers.insert((num_layers-1) as u8, Layer::build_naive_pg(dataset, dataid_set.clone(), pg_max_degree));
         Self { 
             layers: layers, 
             entry_point: dataid_set[0], // todo: add error handling (e.g. len==0)
+            search_queue_size: search_queue_size, 
         }
     }
     fn sampling(dataid_set: Vec<DataID>, sample_num: usize) -> Vec<DataID> {
@@ -153,19 +167,17 @@ impl Index {
 
 impl AnnSearch for Index {
     fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> Answers {
-        let search_queue_size = k + 10;
-
         let mut start_point = Neighbor{
             dataid: self.entry_point, 
             dist: distance::l2_distance(Rc::clone(&query), Rc::clone(&dataset.data[&self.entry_point]))
         };
         for layerid in self.layers.len()-1..1{
-            let neighbors = self.layers[&(layerid as u8)].search_layer(dataset, Rc::clone(&query), start_point, search_queue_size);
+            let neighbors = self.layers[&(layerid as u8)].search_layer(dataset, Rc::clone(&query), start_point, self.search_queue_size);
             let nearest = extract_topk(neighbors.into_sorted_vec().clone(), 1);
             start_point = nearest[0].clone();
         }
 
-        let neighbors = self.layers[&0].search_layer(dataset, Rc::clone(&query), start_point, search_queue_size);
+        let neighbors = self.layers[&0].search_layer(dataset, Rc::clone(&query), start_point, self.search_queue_size);
         let answers = neighbors.into_sorted_vec();
         extract_topk(answers.clone(), min(answers.len(), k))
     }
