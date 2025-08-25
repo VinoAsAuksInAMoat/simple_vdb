@@ -172,7 +172,7 @@ impl AnnSearch for Index {
             dist: distance::l2_distance(Rc::clone(&query), Rc::clone(&dataset.data[&self.entry_point]))
         };
         for layerid in self.layers.len()-1..1{
-            let neighbors = self.layers[&(layerid as u8)].search_layer(dataset, Rc::clone(&query), start_point, self.search_queue_size);
+            let neighbors = self.layers[&(layerid as u8)].search_layer(dataset, Rc::clone(&query), start_point, 1);
             let nearest = extract_topk(neighbors.into_sorted_vec().clone(), 1);
             start_point = nearest[0].clone();
         }
