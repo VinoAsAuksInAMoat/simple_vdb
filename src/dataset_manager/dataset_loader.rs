@@ -10,7 +10,12 @@ use std::{
     cmp, 
 };
 
-use crate::common::data::*;
+use crate::common::{
+    data::datatypes::*, 
+    data::neighbor::*, 
+    data::search_result::*, 
+};
+
 
 pub trait Load {
     fn load(&self, filename: &str) -> Result<Dataset, io::Error> {
@@ -48,13 +53,9 @@ impl Load for Fvecs {
         let mut reader = BufReader::new(File::open(filename)?);
         let mut buf: [u8; 4] = [0;4];
 
-        let mut dataset = Dataset {
-            dim: data_dim, 
-            num: data_num, 
-            data: HashMap::new(), 
-        };
+        let mut dataset = Dataset::new (data_dim);
 
-        for id in 0..data_num {
+        for _ in 0..data_num {
             let _ = reader.read(&mut buf);
             let dim = Dim::from_le_bytes(buf);
             if dataset.dim != dim {
@@ -67,7 +68,7 @@ impl Load for Fvecs {
                 let val: f32 = f32::from_le_bytes(buf);
                 row.push(val);
             }
-            dataset.data.insert(id, Rc::new(row));
+            dataset.add(row.clone());
         }
 
         Ok(dataset)

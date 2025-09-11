@@ -1,14 +1,22 @@
 use std::rc::Rc;
 
-use crate::common::data::*;
-use crate::search::{distance, index::interface::*};
+use crate::common::{
+    data::datatypes::*, 
+    data::neighbor::*, 
+    data::search_result::*, 
+};
+use crate::search::{
+    distance::interface::*,
+    distance::l2distance::L2Distance, 
+    index::interface::*
+};
 
 const INF_F32: f32 = 100_000_000_000.0;
 
 #[derive(Clone)]
 struct Cluster {
     centroid: Rc<VecData>, // Rcなしより7%高速
-    vectors: Vec<DataID>, 
+    vectors: Vec<DataId>, 
     data_num: u64, 
 }
 
@@ -105,7 +113,7 @@ impl Index {
         let mut min_dist = INF_F32;
         let mut min_cluster_id: usize = 0; 
         for cluster_id in 0..self.clusters.len() as usize {
-            let dist = distance::l2_distance(Rc::clone(&cmp_vecdata), Rc::clone(&self.clusters[cluster_id].centroid));
+            let dist = L2Distance::calc(Rc::clone(&cmp_vecdata), Rc::clone(&self.clusters[cluster_id].centroid));
             if dist < min_dist {
                 min_dist = dist;
                 min_cluster_id = cluster_id;
@@ -121,10 +129,10 @@ impl AnnSearch for Index {
 
         let min_cluster_id = self.find_nearest_cluster(Rc::clone(&query));
 
-        let mut answers: Answers = Vec::new();
+        let mut search_result: SearchResult = Vec::new();
         for data_id in self.clusters[min_cluster_id].vectors.iter() {
-            let dist = distance::l2_distance(Rc::clone(&query), Rc::clone(dataset.data.get(data_id).unwrap()));
-            answers.push(Neighbor{
+            let dist = L2Distance::calc(Rc::clone(&query), Rc::clone(dataset.data.get(data_id).unwrap()));
+            search_result.push(Neighbor{
                 dist: dist, 
                 dataid: *data_id, 
             });
@@ -132,7 +140,7 @@ impl AnnSearch for Index {
 
         let dist_calc_num = self.clusters[min_cluster_id].vectors.len() as u32 + self.clusters.len() as u32;
         println!("[Details] the num of dist calc: {}", dist_calc_num);
-        extract_topk(answers, k)
+        extract_topk(search_result, k)
     }
 
 }

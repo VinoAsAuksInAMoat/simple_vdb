@@ -1,21 +1,14 @@
-use std::cmp::{Ordering};
-use std::rc::Rc;
-use std::collections::HashMap;
+use std::{
+    rc::Rc, 
+    collections::HashMap, 
+    cmp::Ordering, 
+};
+use crate::common::data::datatypes::*;
 
-pub type VecData = Vec<f32>;
-pub type DataID = u64;
-pub type Dim = u32;
-pub type Dist = f32;
-
-pub struct Dataset {
-    pub dim: Dim, 
-    pub num: u64, 
-    pub data: HashMap<DataID, Rc<VecData>>, 
-}
 
 #[derive(Debug, Clone)]
 pub struct Neighbor {
-    pub dataid: DataID, 
+    pub dataid: DataId, 
     pub dist: Dist, 
 }
 
@@ -39,14 +32,6 @@ impl Ord for Neighbor {
     }
 }
 
-pub type Answers = Vec<Neighbor>;
-
-pub fn extract_topk(answers: Answers, k: usize) -> Answers {
-    let mut topk_answers = answers.clone();
-    topk_answers.sort();
-    let _ = topk_answers.split_off(k);
-    topk_answers
-}
 
 #[cfg(test)]
 mod tests {
