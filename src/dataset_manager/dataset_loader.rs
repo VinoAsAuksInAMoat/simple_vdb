@@ -68,7 +68,7 @@ impl Load for Fvecs {
                 let val: f32 = f32::from_le_bytes(buf);
                 row.push(val);
             }
-            dataset.add(row.clone());
+            let _ = dataset.add(&row);
         }
 
         Ok(dataset)

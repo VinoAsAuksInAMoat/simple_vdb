@@ -22,11 +22,12 @@ impl Dataset {
             last_used_dataid: 0, 
         }
     }
-    pub fn add(&mut self, vecdata: VecData) {
+    pub fn add(&mut self, vecdata: &VecData) -> DataId{
         let dataid = self.issue_dataid();
         self.data.insert(dataid, Rc::new(vecdata.clone()));
         self.num += 1;
         self.last_used_dataid = dataid;
+        dataid
     }
     fn issue_dataid(&mut self) -> DataId {
         // todo: impl mutex
