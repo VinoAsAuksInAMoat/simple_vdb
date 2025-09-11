@@ -11,6 +11,7 @@ mod search;
 mod evaluation;
 
 use crate::dataset_manager::dataset_loader::*;
+use crate::common::data::datatypes::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

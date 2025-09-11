@@ -4,7 +4,11 @@ use std::time;
 pub mod distance;
 pub mod index;
 
-use crate::common::data::*;
+use crate::common::{
+    data::datatypes::*, 
+    data::neighbor::*, 
+    data::search_result::*, 
+};
 use crate::search::index::interface::*;
 
 #[allow(dead_code)]
@@ -14,20 +18,20 @@ pub enum IndexType {
     HNSW, 
 }
 
-pub fn knn_exact_search(query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) -> Answers {
+pub fn knn_exact_search(query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) -> SearchResult {
     let mut index = index::brute_force::Index();
     index.knn(dataset, query, k_for_search)
 }
 
-pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) -> Answers {
-    let mut answers = Vec::new();
+pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) -> SearchResult {
+    let mut ground_truth = Vec::new();
     match using_index {
         IndexType::BruteForce => {
             println!("[Info] Use no index (brute-force search)");
             println!("[Info] kNN search: k={}", k_for_search);
             let timer = time::Instant::now();
             let mut index = index::brute_force::Index::build();
-            answers = index.knn(dataset, query, k_for_search);
+            ground_truth = index.knn(dataset, query, k_for_search);
             println!("[Info] -> completed: {:?}", timer.elapsed());
         }, 
         IndexType::IVFFlat => {
@@ -42,7 +46,7 @@ pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usiz
             
             println!("[Info] kNN search: k={}", k_for_search);
             let timer = time::Instant::now();
-            answers = index.knn(dataset, query, k_for_search);
+            ground_truth = index.knn(dataset, query, k_for_search);
             println!("[Info] -> completed: {:?}", timer.elapsed());
         }, 
         IndexType::HNSW => {
@@ -57,11 +61,11 @@ pub fn knn_search(using_index: IndexType, query: Rc<VecData>, k_for_search: usiz
 
             println!("[Info] kNN search: k={}", k_for_search);
             let timer = time::Instant::now();
-            answers = index.knn(dataset, query, k_for_search);
+            ground_truth = index.knn(dataset, query, k_for_search);
             println!("[Info] -> completed: {:?}", timer.elapsed());
         },
     }
-    println!("{:?}", answers);
-    answers
+    println!("{:?}", ground_truth);
+    ground_truth
 
 }
