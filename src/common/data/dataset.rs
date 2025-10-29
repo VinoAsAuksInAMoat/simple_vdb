@@ -12,7 +12,6 @@ use crate::common::data::datatypes::*;
 use crate::common::data::id_allocator::*;
 
 pub struct Dataset {
-    pub dim: Dim,
     pub data: HashMap<DataId, Rc<VecData>>,
     dataid_allocator: Arc<IdAllocator>,
 }
@@ -20,14 +19,12 @@ pub struct Dataset {
 impl Dataset {
     pub fn new(dim: Dim) -> Dataset {
         Dataset {
-            dim,
             data: HashMap::new(),
             dataid_allocator: Arc::new(IdAllocator::new()),
         }
     }
     pub fn with_capacity(dim: Dim, capacity: usize) -> Dataset {
         Dataset {
-            dim,
             data: HashMap::with_capacity(capacity),
             dataid_allocator: Arc::new(IdAllocator::new()),
         }
@@ -36,7 +33,11 @@ impl Dataset {
         self.data.len()
     }
     pub fn dim(&self) -> usize {
-        self.data[&0].len()
+        if self.data.is_empty() {
+            0
+        } else {
+            self.data.iter().len()
+        }
     }
     pub fn add(&mut self, vecdata: VecData) -> DataId {
         let dataid = self.dataid_allocator.allocate();

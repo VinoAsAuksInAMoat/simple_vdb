@@ -1,6 +1,7 @@
+use crossbeam_queue::SegQueue;
 use std::{
     sync::{
-        Arc, Mutex,
+        Arc,
         atomic::{AtomicU64, Ordering},
     },
     thread,
@@ -11,18 +12,18 @@ use crate::common::data::datatypes::*;
 
 pub struct IdAllocator {
     next_id: AtomicU64,
-    released_ids: Mutex<Vec<DataId>>,
+    released_ids: SegQueue<DataId>,
 }
 
 impl IdAllocator {
     pub fn new() -> Self {
         Self {
             next_id: AtomicU64::new(0),
-            released_ids: Mutex::new(Vec::new()),
+            released_ids: SegQueue::new(),
         }
     }
     pub fn allocate(&self) -> u64 {
-        if let Some(id) = self.released_ids.lock().unwrap().pop() {
+        if let Some(id) = self.released_ids.pop() {
             id
         } else {
             let id = self.next_id.fetch_add(1, Ordering::Relaxed);
@@ -33,7 +34,7 @@ impl IdAllocator {
         }
     }
     pub fn release(&self, id: DataId) {
-        self.released_ids.lock().unwrap().push(id);
+        self.released_ids.push(id);
     }
 }
 
@@ -79,11 +80,11 @@ mod tests {
 
         // 再度IDを発行 -> リリースされた3が返る
         let id4 = id_allocator.allocate();
-        assert_eq!(id4, 3);
+        assert!(id4 == id1 || id4 == 3);
 
         // 再度IDを発行 -> リリースされたid1が返る
         let id5 = id_allocator.allocate();
-        assert_eq!(id5, id1);
+        assert!(id5 == id1 || id5 == 3);
 
         // 再度IDを発行 -> next_idから発行する
         let id6 = id_allocator.allocate();

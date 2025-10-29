@@ -38,7 +38,7 @@ impl DistanceCalculation for L2Distance {
             let vec1: Simd<f32, 8> = Simd::<f32, 8>::from_slice(&v1[i..(i + 8)]);
             let vec2: Simd<f32, 8> = Simd::<f32, 8>::from_slice(&v2[i..(i + 8)]);
             let diff: Simd<f32, 8> = vec1 - vec2;
-            pow_sum += (diff * diff).reduce_sum();
+            pow_sum += (diff * diff).reduce_sum() as Dist;
         }
         pow_sum.sqrt()
     }
