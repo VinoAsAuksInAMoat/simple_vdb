@@ -109,7 +109,7 @@ impl Index {
         let mut min_dist = INF_F32;
         let mut min_cluster_id: usize = 0; 
         for cluster_id in 0..self.clusters.len() as usize {
-            let dist = L2Distance::calc(Rc::clone(&cmp_vecdata), Rc::clone(&self.clusters[cluster_id].centroid));
+            let dist = L2Distance::calc(&cmp_vecdata, &self.clusters[cluster_id].centroid);
             if dist < min_dist {
                 min_dist = dist;
                 min_cluster_id = cluster_id;
@@ -127,7 +127,7 @@ impl AnnSearch for Index {
 
         let mut search_result: SearchResult = Vec::new();
         for data_id in self.clusters[min_cluster_id].vectors.iter() {
-            let dist = L2Distance::calc(Rc::clone(&query), Rc::clone(dataset.data.get(data_id).unwrap()));
+            let dist = L2Distance::calc(&query, dataset.data.get(data_id).unwrap());
             search_result.push(Neighbor{
                 dist: dist, 
                 dataid: *data_id, 

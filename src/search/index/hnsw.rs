@@ -78,7 +78,7 @@ impl Layer {
                 }
                 let cmp_neighbor = Neighbor{
                     dataid: neighbor_ele.dataid, 
-                    dist: L2Distance::calc(Rc::clone(&query), Rc::clone(&dataset.data[&neighbor_ele.dataid])), 
+                    dist: L2Distance::calc(&query, &dataset.data[&neighbor_ele.dataid]), 
                 };
                 visited.push(cmp_neighbor.dataid);
                 let farghest_neighbor = neighbors.peek().unwrap();
@@ -108,7 +108,7 @@ impl Layer {
     fn find_knn_naive(&self, dataset: &Dataset, cmp_vecdata: Rc<VecData>, k: usize) -> Vec<Neighbor> {
         let mut neighbors: Vec<Neighbor> = Vec::new();
         for (dataid, vecdata) in &dataset.data {
-            let dist = L2Distance::calc(Rc::clone(&cmp_vecdata), Rc::clone(vecdata));
+            let dist = L2Distance::calc(&cmp_vecdata, vecdata);
             neighbors.push(Neighbor{
                 dataid: *dataid, 
                 dist: dist, 
@@ -168,7 +168,7 @@ impl AnnSearch for Index {
     fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> SearchResult {
         let mut start_point = Neighbor{
             dataid: self.entry_point, 
-            dist: L2Distance::calc(Rc::clone(&query), Rc::clone(&dataset.data[&self.entry_point]))
+            dist: L2Distance::calc(&query, &dataset.data[&self.entry_point])
         };
         for layerid in self.layers.len()-1..1{
             let neighbors = self.layers[&(layerid as u8)].search_layer(dataset, Rc::clone(&query), start_point, 1);

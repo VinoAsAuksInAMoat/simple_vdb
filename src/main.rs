@@ -1,4 +1,6 @@
-#[allow(unused_imports)]
+#![feature(portable_simd)]
+use std::simd::{f32x8, Simd};
+
 use std::{
     env, 
     rc::Rc, 
@@ -20,16 +22,16 @@ fn main() {
     let data_num: u64 = args[3].parse().unwrap();
     let k_for_search: usize = args[4].parse().unwrap();
 
-    let try_num = 1;
+    let query_num = 1;
     let loader = Fvecs;
 
     // use load instead of partial_load to load all dataset
     let dataset = loader.partial_load(&dataset_filename, data_num).unwrap();
     println!("[Info] dataset info: dim={}, num={}", dataset.dim, dataset.len());
-    let queryset = loader.partial_load(&query_filename, 1).unwrap();
+    let queryset = loader.partial_load(&query_filename, query_num).unwrap();
     println!("[Info] queries info: dim={}, num={}", queryset.dim, queryset.len());
     
-    let using_index = search::IndexType::IVFFlat; // BruteForce, IVFFlat, HNSW
+    let using_index = search::IndexType::BruteForce; // BruteForce, IVFFlat, HNSW
     let query = queryset.data.get(&0).unwrap();
     let answers = search::knn_search(using_index, Rc::clone(&query), k_for_search, &dataset);
     evaluation::evaluate_recall(answers.clone(), Rc::clone(&query), k_for_search, &dataset);

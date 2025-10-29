@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
-use crate::common::data::datatypes::{VecData, Dist};
+use crate::common::data::datatypes::{VecVal, VecData, Dist};
 
 
 pub trait DistanceCalculation {
-    fn calc(v1: Rc<VecData>, v2: Rc<VecData>) -> Dist;
+    fn calc(v1: &[VecVal], v2: &[VecVal]) -> Dist;
+    fn calc_simd(v1: &[VecVal], v2: &[VecVal]) -> Dist;
 }

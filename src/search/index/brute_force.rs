@@ -17,7 +17,7 @@ impl AnnSearch for Index {
     fn knn(&mut self, dataset: &Dataset, query: Rc<VecData>, k: usize) -> SearchResult {
         let mut search_result: SearchResult = Vec::new();
         for (dataid, vecdata) in &dataset.data {
-            let dist = L2Distance::calc(Rc::clone(&query), Rc::clone(vecdata));
+            let dist = L2Distance::calc(&query, vecdata);
             search_result.push(Neighbor{
                 dataid: *dataid, 
                 dist: dist, 

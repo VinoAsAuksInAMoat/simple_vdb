@@ -36,9 +36,9 @@ impl Dataset {
     pub fn len(&self) -> usize {
         self.data.len()
     }
-    pub fn add(&mut self, vecdata: &VecData) -> DataId {
+    pub fn add(&mut self, vecdata: VecData) -> DataId {
         let dataid = self.dataid_allocator.allocate();
-        self.data.insert(dataid, Rc::new(vecdata.clone()));
+        self.data.insert(dataid, Rc::new(vecdata));
         dataid
     }
     pub fn remove(&mut self, dataid: &DataId) {

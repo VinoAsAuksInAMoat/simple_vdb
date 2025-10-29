@@ -49,7 +49,7 @@ impl Load for Fvecs {
         let mut reader = BufReader::new(File::open(filename)?);
         let mut buf: [u8; 4] = [0;4];
 
-        let mut dataset = Dataset::new (data_dim);
+        let mut dataset = Dataset::with_capacity(data_dim, data_num as usize);
 
         for _ in 0..data_num {
             let _ = reader.read(&mut buf);
@@ -58,13 +58,13 @@ impl Load for Fvecs {
                 panic!("The dimensions of data are not same");
             }
 
-            let mut row = Vec::new();
+            let mut row = Vec::with_capacity(data_num as usize);
             for _j in 0..(dataset.dim) {
                 let _ = reader.read(&mut buf);
                 let val: f32 = f32::from_le_bytes(buf);
                 row.push(val);
             }
-            let _ = dataset.add(&row);
+            let _ = dataset.add(row);
         }
 
         Ok(dataset)
