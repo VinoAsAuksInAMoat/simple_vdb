@@ -7,11 +7,7 @@ use rand::{
     seq::SliceRandom, 
     prelude::*, 
 };
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-    data::search_result::*, 
-};
+use crate::common::data::*;
 use crate::search::{
     distance, 
     distance::interface::*,

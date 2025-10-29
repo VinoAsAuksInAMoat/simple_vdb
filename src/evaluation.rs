@@ -1,11 +1,6 @@
 use std::rc::Rc;
 
-use crate::common::{
-    data::*, 
-    data::datatypes::*, 
-    data::neighbor::*, 
-    data::search_result::*, 
-};
+use crate::common::data::*;
 use crate::search;
 
 pub fn evaluate_recall(search_result: SearchResult, query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) {

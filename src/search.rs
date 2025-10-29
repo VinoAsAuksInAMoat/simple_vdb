@@ -4,11 +4,7 @@ use std::time;
 pub mod distance;
 pub mod index;
 
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-    data::search_result::*, 
-};
+use crate::common::data::*;
 use crate::search::index::interface::*;
 
 #[allow(dead_code)]

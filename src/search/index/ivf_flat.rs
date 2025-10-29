@@ -1,17 +1,13 @@
 use std::rc::Rc;
 
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-    data::search_result::*, 
-};
+use crate::common::data::*;
 use crate::search::{
     distance::interface::*,
     distance::l2distance::L2Distance, 
     index::interface::*
 };
 
-const INF_F32: f32 = 100_000_000_000.0;
+const INF_F32: f32 = f32::INFINITY;
 
 #[derive(Clone)]
 struct Cluster {
@@ -22,7 +18,7 @@ struct Cluster {
 
 impl Cluster {
     fn calc_centroid(&mut self, dataset: &Dataset) {
-        if dataset.num == 0 {
+        if dataset.len() == 0 {
             return;
         }
         let mut sum: VecData = vec![0.0; dataset.dim as usize];
@@ -31,7 +27,7 @@ impl Cluster {
                 *v_in_sum += *v_in_vecdata;
             }
         }
-        let num_f32 = dataset.num as f32;
+        let num_f32 = dataset.len() as f32;
         let new_centroid = sum.iter().map(|x| x / num_f32).collect();
         self.centroid = Rc::new(new_centroid);
     } 

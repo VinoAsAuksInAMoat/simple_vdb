@@ -1,10 +1,6 @@
 use std::rc::Rc;
 
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-    data::search_result::*, 
-};
+use crate::common::data::*;
 use crate::search::{
     distance::interface::*,
     distance::l2distance::L2Distance, 

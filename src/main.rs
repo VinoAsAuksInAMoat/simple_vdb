@@ -10,8 +10,8 @@ mod common;
 mod search;
 mod evaluation;
 
+use crate::common::data::*;
 use crate::dataset_manager::dataset_loader::*;
-use crate::common::data::datatypes::*;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -25,9 +25,9 @@ fn main() {
 
     // use load instead of partial_load to load all dataset
     let dataset = loader.partial_load(&dataset_filename, data_num).unwrap();
-    println!("[Info] dataset info: dim={}, num={}", dataset.dim, dataset.num);
+    println!("[Info] dataset info: dim={}, num={}", dataset.dim, dataset.len());
     let queryset = loader.partial_load(&query_filename, 1).unwrap();
-    println!("[Info] queries info: dim={}, num={}", queryset.dim, queryset.num);
+    println!("[Info] queries info: dim={}, num={}", queryset.dim, queryset.len());
     
     let using_index = search::IndexType::IVFFlat; // BruteForce, IVFFlat, HNSW
     let query = queryset.data.get(&0).unwrap();
