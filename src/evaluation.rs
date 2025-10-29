@@ -1,24 +1,27 @@
-use std::rc::Rc;
+use std::{collections::HashSet, rc::Rc};
 
 use crate::common::data::*;
 use crate::search;
 
-pub fn evaluate_recall(search_result: SearchResult, query: Rc<VecData>, k_for_search: usize, dataset: &Dataset) {
+pub fn evaluate_recall(
+    search_result: &SearchResult,
+    query: &VecData,
+    k_for_search: usize,
+    dataset: &Dataset,
+) {
     println!("[Info] Calculating search accuracy...");
-    let ground_truth: SearchResult = search::knn_exact_search(Rc::clone(&query), k_for_search, &dataset);
+    let ground_truth: SearchResult = search::knn_exact_search(&query, k_for_search, &dataset);
 
-    let mut answers_ids = Vec::new();
-    for v in search_result.iter() {
-        answers_ids.push(v.dataid.clone());
-    }
+    let mut answers_ids: HashSet<DataId> = search_result.iter().map(|v| v.dataid.clone()).collect();
 
-    let mut tp_count: u32 = 0;
-    for ele in ground_truth.iter() {
-        if answers_ids.contains(&ele.dataid) {
-            tp_count +=1;
-        }
-    }
+    let tp_count = ground_truth
+        .iter()
+        .filter(|ele| answers_ids.contains(&ele.dataid))
+        .count();
 
     let recall: f64 = tp_count as f64 / ground_truth.len() as f64;
-    println!("[Info] -> completed: recallK@K={} (K={})", recall, k_for_search);
+    println!(
+        "[Info] -> completed: recallK@K={} (K={})",
+        recall, k_for_search
+    );
 }

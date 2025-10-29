@@ -1,7 +1,4 @@
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-};
+use crate::common::{data::datatypes::*, data::neighbor::*};
 
 pub type SearchResult = Vec<Neighbor>;
 

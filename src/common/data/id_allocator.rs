@@ -1,18 +1,17 @@
 use std::{
-    thread, 
     sync::{
-        atomic::{AtomicU64, Ordering}, 
-        Arc, 
-        Mutex, 
-    }, 
+        Arc, Mutex,
+        atomic::{AtomicU64, Ordering},
+    },
+    thread,
 };
 
-use crate::common::data::datatypes::*;
 use crate::common::data::datatypes;
+use crate::common::data::datatypes::*;
 
 pub struct IdAllocator {
     next_id: AtomicU64,
-    released_ids: Mutex<Vec<DataId>>, 
+    released_ids: Mutex<Vec<DataId>>,
 }
 
 impl IdAllocator {
@@ -37,7 +36,6 @@ impl IdAllocator {
         self.released_ids.lock().unwrap().push(id);
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -111,9 +109,7 @@ mod tests {
 
         for _ in 0..4 {
             let idalloc = Arc::clone(&id_allocator);
-            let handle = thread::spawn(move || {
-                idalloc.allocate()
-            });
+            let handle = thread::spawn(move || idalloc.allocate());
             ids.push(handle.join().unwrap());
         }
 

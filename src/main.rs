@@ -1,16 +1,12 @@
 #![feature(portable_simd)]
-use std::simd::{f32x8, Simd};
+use std::simd::{Simd, f32x8};
 
-use std::{
-    env, 
-    rc::Rc, 
-    time, 
-};
+use std::{env, rc::Rc, time};
 
-mod dataset_manager;
 mod common;
-mod search;
+mod dataset_manager;
 mod evaluation;
+mod search;
 
 use crate::common::data::*;
 use crate::dataset_manager::dataset_loader::*;
@@ -27,13 +23,27 @@ fn main() {
 
     // use load instead of partial_load to load all dataset
     let dataset = loader.partial_load(&dataset_filename, data_num).unwrap();
-    println!("[Info] dataset info: dim={}, num={}", dataset.dim, dataset.len());
+    println!(
+        "[Info] dataset info: dim={}, num={}",
+        dataset.dim,
+        dataset.len()
+    );
     let queryset = loader.partial_load(&query_filename, query_num).unwrap();
-    println!("[Info] queries info: dim={}, num={}", queryset.dim, queryset.len());
-    
-    let using_index = search::IndexType::BruteForce; // BruteForce, IVFFlat, HNSW
-    let query = queryset.data.get(&0).unwrap();
-    let answers = search::knn_search(using_index, Rc::clone(&query), k_for_search, &dataset);
-    evaluation::evaluate_recall(answers.clone(), Rc::clone(&query), k_for_search, &dataset);
+    println!(
+        "[Info] queries info: dim={}, num={}",
+        queryset.dim,
+        queryset.len()
+    );
 
+    let using_index = search::IndexType::BruteForce; // BruteForce, IVFFlat, HNSW
+
+    for (_, query) in queryset.data.iter() {
+        let answers = search::knn_search(
+            search::IndexType::BruteForce,
+            Rc::clone(&query),
+            k_for_search,
+            &dataset,
+        );
+        evaluation::evaluate_recall(&answers, &query, k_for_search, &dataset);
+    }
 }
