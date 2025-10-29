@@ -1,13 +1,15 @@
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-};
+use crate::common::{data::datatypes::*, data::neighbor::*};
 
 pub type SearchResult = Vec<Neighbor>;
 
-pub fn extract_topk(search_result: SearchResult, k: usize) -> SearchResult {
-    let mut topk_search_result = search_result.clone();
-    topk_search_result.sort();
-    let _ = topk_search_result.split_off(k);
-    topk_search_result
+pub fn extract_topk(mut search_result: SearchResult, k: usize) -> SearchResult {
+    if k < search_result.len() {
+        let _ = search_result.select_nth_unstable(k);
+        let mut topk = &mut search_result[..k];
+        topk.sort_unstable();
+        topk.to_vec()
+    } else {
+        search_result.sort_unstable();
+        search_result
+    }
 }
