@@ -25,21 +25,21 @@ fn main() {
     let dataset = loader.partial_load(&dataset_filename, data_num).unwrap();
     println!(
         "[Info] dataset info: dim={}, num={}",
-        dataset.dim,
+        dataset.dim(),
         dataset.len()
     );
     let queryset = loader.partial_load(&query_filename, query_num).unwrap();
     println!(
         "[Info] queries info: dim={}, num={}",
-        queryset.dim,
+        queryset.dim(),
         queryset.len()
     );
 
-    let using_index = search::IndexType::BruteForce; // BruteForce, IVFFlat, HNSW
+    //let using_index = search::IndexType::BruteForce; // BruteForce, IVFFlat, HNSW
 
     for (_, query) in queryset.data.iter() {
         let answers = search::knn_search(
-            search::IndexType::BruteForce,
+            search::IndexType::IVFFlat,
             Rc::clone(&query),
             k_for_search,
             &dataset,

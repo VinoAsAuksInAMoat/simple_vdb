@@ -59,12 +59,12 @@ impl Load for Fvecs {
         for _ in 0..data_num {
             let _ = reader.read(&mut buf);
             let dim = Dim::from_le_bytes(buf);
-            if dataset.dim != dim {
+            if data_dim != dim {
                 panic!("The dimensions of data are not same");
             }
 
             let mut row = Vec::with_capacity(data_num as usize);
-            for _j in 0..(dataset.dim) {
+            for _j in 0..(data_dim) {
                 let _ = reader.read(&mut buf);
                 let val: f32 = f32::from_le_bytes(buf);
                 row.push(val);
