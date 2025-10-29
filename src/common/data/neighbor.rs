@@ -38,7 +38,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn Neighbor_cmp() {
+    fn compare_Neighbor() {
         let n1 = Neighbor {
             dataid: 10, 
             dist: 0.5, 

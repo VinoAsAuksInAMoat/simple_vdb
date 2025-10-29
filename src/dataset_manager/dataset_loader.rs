@@ -10,11 +10,7 @@ use std::{
     cmp, 
 };
 
-use crate::common::{
-    data::datatypes::*, 
-    data::neighbor::*, 
-    data::search_result::*, 
-};
+use crate::common::data::*;
 
 
 pub trait Load {
